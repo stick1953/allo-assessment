@@ -10,7 +10,10 @@ export default function CheckoutModal({ reservation, productName, onClose }: { r
   const [status, setStatus] = useState<string>(reservation.status)
   const [loading, setLoading] = useState(false)
 
-  const expiryDate = new Date(reservation.expiresAt)
+  // Fix timezone issue when DB strips the 'Z' from UTC timestamps
+  const rawExpiresAt = reservation.expiresAt
+  const safeExpiresStr = rawExpiresAt.endsWith('Z') ? rawExpiresAt : `${rawExpiresAt}Z`
+  const expiryDate = new Date(safeExpiresStr)
   const formattedExpiry = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
   // Countdown timer
