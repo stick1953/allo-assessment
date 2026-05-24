@@ -1,46 +1,29 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+)
 
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params
     const { id } = params
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Lock reservation
-      const reservations: any[] = await tx.$queryRaw`
-        SELECT * FROM "Reservation"
-        WHERE id = ${id}
-        FOR UPDATE
-      `
-      if (!reservations || reservations.length === 0) {
-        throw new Error('NOT_FOUND')
-      }
-
-      const reservation = reservations[0]
-
-      if (reservation.status === 'CONFIRMED' || reservation.status === 'RELEASED') {
-        return reservation // Idempotent behavior gracefully handled
-      }
-
-      await tx.stock.updateMany({
-        where: { warehouseId: reservation.warehouseId, productId: reservation.productId },
-        data: { reservedUnits: { decrement: reservation.quantity } }
-      })
-
-      const updated = await tx.reservation.update({
-        where: { id },
-        data: { status: 'RELEASED' }
-      })
-
-      return updated
+    const { data: reservation, error } = await supabase.rpc('release_reservation', {
+      p_reservation_id: id
     })
 
-    return NextResponse.json(result)
-  } catch (error: any) {
-    if (error.message === 'NOT_FOUND') {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (error) {
+      if (error.message.includes('Not found')) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      throw error
     }
+
+    return NextResponse.json(reservation)
+  } catch (error: any) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

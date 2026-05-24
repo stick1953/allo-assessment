@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server'
-
-import { prisma } from '@/lib/prisma'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+)
+
 export async function GET() {
   try {
-    const products = await prisma.product.findMany({
-      include: {
-        stocks: {
-          include: {
-            warehouse: true
-          }
-        }
-      }
-    })
+    const { data: products, error } = await supabase
+      .from('Product')
+      .select('*, stocks:Stock(*, warehouse:Warehouse(*))')
+      
+    if (error) throw error
     
     // Calculate available stock
-    const mappedProducts = products.map(product => {
+    const mappedProducts = (products || []).map(product => {
       return {
         ...product,
-        stocks: product.stocks.map(stock => ({
+        stocks: (product.stocks || []).map((stock: any) => ({
           ...stock,
           availableUnits: stock.totalUnits - stock.reservedUnits
         }))
