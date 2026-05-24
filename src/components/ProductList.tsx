@@ -28,9 +28,9 @@ export default function ProductList() {
   // Keep track of quantity selected for each stock row
   const [quantities, setQuantities] = useState<Record<string, number>>({})
 
-  const loadProducts = async () => {
+  const loadProducts = async (keepError = false) => {
     setLoading(true)
-    setErrorMsg("")
+    if (!keepError) setErrorMsg("")
     try {
       const res = await fetch("/api/products")
       const data = await res.json()
@@ -72,7 +72,7 @@ export default function ProductList() {
     } catch (e: any) {
       setErrorMsg(e.message)
     } finally {
-      loadProducts() // refresh stock levels
+      loadProducts(true) // refresh stock levels
     }
   }
 
