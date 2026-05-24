@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { addMinutes } from 'date-fns'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
+import prisma from '@/lib/prisma'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +19,18 @@ const reserveSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const idempotencyKey = req.headers.get('Idempotency-Key') || uuidv4()
+    const idempotencyKey = req.headers.get('Idempotency-Key')
+    
+    if (idempotencyKey) {
+      const existing = await prisma.reservation.findUnique({
+        where: { idempotencyKey }
+      })
+      if (existing) {
+        return NextResponse.json(existing)
+      }
+    }
+
+    const finalIdempotencyKey = idempotencyKey || uuidv4()
     const parsed = reserveSchema.parse(body)
     
     const { productId, warehouseId, quantity } = parsed
@@ -40,7 +52,17 @@ export async function POST(req: Request) {
       throw error
     }
 
-    return NextResponse.json(reservation)
+    const reservationId = typeof reservation === 'string' ? reservation : reservation.id;
+
+    const updatedReservation = await prisma.reservation.update({
+      where: { id: reservationId },
+      data: { idempotencyKey: finalIdempotencyKey }
+    }).catch(e => {
+        console.error("Failed adjusting idempotency key:", e);
+        return reservation;
+    });
+
+    return NextResponse.json(updatedReservation || reservation)
 
   } catch (error: any) {
     if (error.message === 'NOT_ENOUGH_STOCK') {
