@@ -30,10 +30,23 @@ export default function ProductList() {
 
   const loadProducts = async () => {
     setLoading(true)
+    setErrorMsg("")
     try {
       const res = await fetch("/api/products")
       const data = await res.json()
-      setProducts(data)
+      if (!res.ok) {
+        throw new Error(data.details || data.error || "Failed to load inventory")
+      }
+      
+      if (Array.isArray(data)) {
+        setProducts(data)
+      } else {
+        setProducts([])
+        setErrorMsg("Failed to load products: Invalid data format")
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message)
+      setProducts([])
     } finally {
       setLoading(false)
     }

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 // This endpoint can be triggered by Vercel Cron or any other external scheduler every minute
 export async function GET(req: Request) {

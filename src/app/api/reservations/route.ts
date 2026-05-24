@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { v4 as uuidv4 } from 'uuid'
 import { addMinutes } from 'date-fns'
 import { z } from 'zod'
 
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 const reserveSchema = z.object({
   productId: z.string().uuid(),
