@@ -76,10 +76,9 @@ export default function ProductList() {
     }
   }
 
-  const handleQuantityChange = (stockId: string, val: number, max: number) => {
+  const handleQuantityChange = (stockId: string, val: number) => {
     let q = isNaN(val) ? 1 : val;
     q = Math.max(1, q); // Cannot go below 1
-    q = Math.min(q, max); // Cannot exceed available stock
     setQuantities(prev => ({ ...prev, [stockId]: q }));
   }
 
@@ -118,23 +117,16 @@ export default function ProductList() {
                     <input 
                         type="number" 
                         min="1" 
-                        max={stock.availableUnits} 
                         value={q} 
-                        onChange={(e) => handleQuantityChange(stock.id, parseInt(e.target.value), stock.availableUnits)}
-                        disabled={stock.availableUnits <= 0}
-                        className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:text-gray-400 font-mono"
+                        onChange={(e) => handleQuantityChange(stock.id, parseInt(e.target.value))}
+                        className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black font-mono"
                     />
                     <button
-                      disabled={stock.availableUnits <= 0}
                       onClick={() => {
                           setSelectedProduct(product)
                           handleReserve(product.id, stock.warehouseId, q)
                       }}
-                      className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
-                        stock.availableUnits > 0 
-                          ? 'bg-black text-white hover:bg-gray-800' 
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
+                      className="px-4 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap bg-black text-white hover:bg-gray-800"
                     >
                       Reserve
                     </button>
